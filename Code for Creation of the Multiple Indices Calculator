@@ -220,3 +220,40 @@ class AnthropometricAgent:
         except Exception as e:
             print(f"❌ Error: {e}")
             raise
+
+#### trying out on Real Life Data
+### Selecting the variables of interest
+EThs_Data=ETh[["c1", "c3", "m11","m12", "m14", "m15"]]
+
+## Renaming the Selected Columns
+EThs_Data=EThs_Data.rename(columns={'c1':'sex',
+                                     'c3':'age',
+                                     'm11':'height_cm',
+                                     'm12':'weight_kg',
+                                     'm14': "wc_cm",
+                                    "m15": "hip_cm"})
+
+##Group Sex to 0 as 'male' and 1 as 'female'
+EThs_Data['sex']=EThs_Data['sex'].apply(lambda x:0 if x==1 else 1)
+
+## Dropping NA
+EThs_Data=EThs_Data.dropna()
+
+### Droping Weight or Height >800, as are often errors
+EThs_Data=EThs_Data.query('weight_kg<800 & height_cm<800')
+EThs_Data
+
+### Creating Directory
+## Saving the file
+EThs_Data.to_csv('/content/EThs_Data.csv', index=False)
+
+
+# Example usage
+if __name__ == "__main__":
+    agent = AnthropometricAgent()
+    input_file = "/content/EThs_Data.csv"
+    output_file = "output_data.csv"  ### Created the output as 'CSV'
+    try:
+        agent.process_data(input_file, output_file)
+    except Exception as e:
+        print(f"❌ Error: {e}")
