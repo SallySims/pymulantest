@@ -1,0 +1,36 @@
+## Deploy the Agent Online
+!pip install streamlit
+import streamlit as st
+#Streamlit App
+st.title("Anthropometric Index Calculator")
+st.write("Upload a CSV file with columns: height_cm, weight_kg, age, sex, wc_cm, hip_cm")
+
+uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+if uploaded_file is not None:
+    # Save uploaded file temporarily
+    input_file = "temp_input.csv"
+    with open(input_file, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+
+    # Process the data
+    agent = AnthropometricAIAgent()
+    output_file = "temp_output.csv"
+    df_result = agent.process_data(input_file, output_file)
+
+    # Display results
+    st.write("### Calculated Anthropometric Indices")
+    st.dataframe(df_result)
+
+    # Optional: Download the result
+    st.download_button(
+        label="Download Results",
+        data=df_result.to_csv(index=False),
+        file_name="anthropometric_results.csv",
+        mime="text/csv"
+    )
+
+    # Clean up temporary files
+    import os
+    os.remove(input_file)
+    if os.path.exists(output_file):
+        os.remove(output_file)
