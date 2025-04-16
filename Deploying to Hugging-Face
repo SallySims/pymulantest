@@ -2,7 +2,7 @@
 !pip install streamlit
 import streamlit as st
 #Streamlit App
-st.title("Anthropometric Index Calculator")
+st.title("pymulantest")
 st.write("Upload a CSV file with columns: height_cm, weight_kg, age, sex, wc_cm, hip_cm")
 
 uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
@@ -18,7 +18,7 @@ if uploaded_file is not None:
     df_result = agent.process_data(input_file, output_file)
 
     # Display results
-    st.write("### Calculated Anthropometric Indices")
+    st.write("### Estimated Anthropometric Indices")
     st.dataframe(df_result)
 
     # Optional: Download the result
