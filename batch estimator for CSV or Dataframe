@@ -60,25 +60,156 @@ class AnthropometricAgent:
                 raise ValueError("Invalid sex values. Use 'male', 'female', 0, or 1.")
 
             # Functions for calculating the anthropometric indices (same as your original functions)
-            def calculate_bmi(weight_kg, height_cm):
+             # Define calculation functions (assuming these are available in the namespace)
+            def calculate_bmi(weight_kg, height_cm):  ### BMI (Body Mass Index) ###
                 height_m = height_cm / 100
                 return weight_kg / (height_m ** 2)
 
-            def calculate_bmr(sex, weight_kg, height_cm, age):
+            def calculate_bmr(sex, weight_kg, height_cm, age): ###  BMR (Basal Metabolic Rate) ##
                 height_m = height_cm / 100
-                if sex == 0:
+                if sex == 0:  # Male
                     return 88.362 + (13.397 * weight_kg) + (4.799 * height_m * 100) - (5.677 * age)
-                else:
+                else:  # Female
                     return 447.593 + (9.247 * weight_kg) + (3.098 * height_m * 100) - (4.330 * age)
 
-            # Other functions omitted for brevity, but they remain the same as your code.
+            def calculate_bsa(weight_kg, height_cm):  ### BSA (Body Surface Area) ###
+                return 0.007184 * (weight_kg ** 0.425) * (height_cm ** 0.725)
 
-            # Apply calculations to the DataFrame
+            def calculate_ibw(height_cm, sex): ### IBW (Ideal Body Weight) ###
+                height_inch = height_cm / 2.54
+                if sex == 0:  # Male
+                    return 50 + 2.3 * (height_inch - 60)
+                else:  # Female
+                    return 45.5 + 2.3 * (height_inch - 60)
+
+            def calculate_abw(ibw, weight_kg): ### ABW (Adjusted Body Weight) ###
+                return ibw + 0.4 * (weight_kg - ibw) if weight_kg > ibw else weight_kg
+
+            def calculate_bfp(bmi, age, sex):  ### BFP (Body Fat Percentage) ###
+                if sex == 0:  # Male
+                    return (1.20 * bmi) + (0.23 * age) - 16.2
+                else:  # Female
+                    return (1.20 * bmi) + (0.23 * age) - 5.4
+
+            def calculate_wc_cm(bfp, weight_kg, height_cm, sex):  ###  WC waist circumference ### This is the ESTIMATED WC
+                if sex == 0:  # Male
+                    return (2.5 * weight_kg * (bfp / 100)) + (0.15 * height_cm) + 25
+                else:  # Female
+                    return (2.7 * weight_kg * (bfp / 100)) + (0.12 * height_cm) + 20
+
+            def calculate_whtr(wc_cm, height_cm): ### WHtR (Waist-to-Height Ratio) ###
+                return wc_cm / height_cm if pd.notnull(wc_cm) else np.nan
+
+            def calculate_whr(wc_cm, hip_cm): ### WHR (Waist-to-Hip Ratio) ###
+                return wc_cm / hip_cm if pd.notnull(wc_cm) else np.nan
+
+            def estimate_whr(bfp, whtr, sex):  ### WHR (Waist-to-Hip Ratio) ### This is the ESTIMATED WHR
+                if sex == 1:  # Female
+                    whr = 0.75 - 0.002 * (bfp - 20) + 0.2 * whtr
+                    return max(0.7, min(0.9, whr))
+                else:  # Male
+                    whr = 0.95 - 0.001 * (bfp - 15) + 0.1 * whtr
+                    return max(0.9, min(1.1, whr))
+
+            def estimate_hip_cm(wc_cm, whtr, height_cm, whr): ###  Estimated Hip Circumference (cm) ###
+                if pd.notnull(wc_cm):
+                    return wc_cm / whr if whr > 0 else np.nan
+                else:
+                    wc_cm_est = whtr * height_cm if pd.notnull(whtr) else np.nan
+                    return wc_cm_est / whr if pd.notnull(wc_cm_est) and whr > 0 else np.nan
+
+            def calculate_ci(weight_kg, height_cm): ### CI (Conicity Index) ###
+                height_m = height_cm / 100
+                return (10 ** 7 * weight_kg) / (height_m ** 3)
+
+            def calculate_pi(weight_kg, height_cm): ### PI (Ponderal Index) ###
+                height_m = height_cm / 100
+                return height_m / (weight_kg ** (1/3))
+
+            def calculate_conicity(wc_cm, weight_kg, height_cm): ### Conicity ###
+                wc_m = wc_cm / 100 if pd.notnull(wc_cm) else np.nan
+                height_m = height_cm / 100
+                return wc_m / np.sqrt(weight_kg / height_m) if pd.notnull(wc_m) else np.nan
+
+            def calculate_lbm(weight_kg, bfp): ### ### LBM (Lean Body Mass) ### ###
+                return weight_kg * (1 - bfp / 100) if bfp >= 0 and bfp <= 100 else np.nan
+
+            def calculate_bmi_prime(bmi):
+                return bmi / 25
+
+            def calculate_muscularity_index(weight_kg, height_cm):  ### Muscularity Index ###
+                height_m = height_cm / 100
+                return (weight_kg / (height_m ** 2)) * 100
+
+            def calculate_metabolic_rate_ratio(bmr, bsa):  ### Metabolic Rate Ratio ###
+                return bmr / bsa if bsa > 0 else np.nan
+
+            def calculate_bai(hip_cm, height_cm): ### BAI (Body Adiposity Index) ###
+                height_m = height_cm / 100
+                return (hip_cm / (height_m ** 1.5)) - 18 if pd.notnull(hip_cm) else np.nan
+
+            def calculate_corpuscular_index(weight_kg, height_cm, age): ### Corpuscular Index ###
+                return (weight_kg * height_cm) / age if age > 0 else np.nan
+
+            def calculate_fm(weight_kg, lbm): ### FM (Fat Mass) ###
+                return weight_kg - lbm if pd.notnull(lbm) else np.nan
+
+            def calculate_absi(wc_cm, bmi, height_cm): ###  ABSI (Body Shape Index) ###
+                height_m = height_cm / 100
+                return wc_cm / (bmi ** (2/3) * height_m ** (1/2)) if pd.notnull(wc_cm) else np.nan
+
+            def calculate_rfm(wc_cm, height_cm, sex): ### RFM (Relative Fat Mass) ###
+                height_m = height_cm / 100
+                if pd.notnull(wc_cm):
+                    if sex == 0:  # Male
+                        return 64 - (20 * (height_m / wc_cm)) + 12
+                    else:  # Female
+                        return 64 - (20 * (height_m / wc_cm))
+                return np.nan
+
+            def calculate_afi(wc_cm, height_cm, sex, age): ### AFI (Abdominal Fatness Index) ###
+                if pd.notnull(wc_cm):
+                    if sex == 0:  # Male
+                        return (wc_cm / height_cm) * (1 + 0.01 * age) * 1.0
+                    else:  # Female
+                        return (wc_cm / height_cm) * (1 + 0.01 * age) * 1.1
+                return np.nan
+
+            def calculate_afm(weight_kg, afi): ### Abdominal Fat Mass ###
+                return weight_kg * (0.7 * afi) if pd.notnull(afi) and afi > 0 else np.nan
+
+            def calculate_afbwr(weight_kg, afm): ### AFBW (Abdominal Fat to Body Weight Ratio) ###
+                return afm / weight_kg if pd.notnull(afm) and weight_kg > 0 else np.nan
+
+            # Creating a Dataframe of Calculated indices, and rounded (2 decimal places) ## change if needed
             df['bmi'] = df.apply(lambda row: calculate_bmi(row['weight_kg'], row['height_cm']), axis=1).round(2)
             df['bmr'] = df.apply(lambda row: calculate_bmr(row['sex'], row['weight_kg'], row['height_cm'], row['age']), axis=1).round(2)
-            # Add more columns as needed, applying the same approach to your calculation functions
+            df['bsa'] = df.apply(lambda row: calculate_bsa(row['weight_kg'], row['height_cm']), axis=1).round(2)
+            df['ibw'] = df.apply(lambda row: calculate_ibw(row['height_cm'], row['sex']), axis=1).round(2)
+            df['abw'] = df.apply(lambda row: calculate_abw(row['ibw'], row['weight_kg']), axis=1).round(2)
+            df['bfp'] = df.apply(lambda row: calculate_bfp(row['bmi'], row['age'], row['sex']), axis=1).round(2)
+            df['estimated_wc_cm'] = df.apply(lambda row: calculate_wc_cm(row['bfp'], row['weight_kg'], row['height_cm'], row['sex']), axis=1).round(2)
+            df['whtr'] = df.apply(lambda row: calculate_whtr(row['wc_cm'], row['height_cm']), axis=1).round(2)
+            df['estimated_whr'] = df.apply(lambda row: estimate_whr(row['bfp'], row['whtr'], row['sex']), axis=1).round(2)
+            df['estimated_hip_cm'] = df.apply(lambda row: estimate_hip_cm(row['wc_cm'], row['whtr'], row['height_cm'], row['estimated_whr']), axis=1).round(2)
+            df['whr']=df.apply(lambda row:calculate_whtr(row["wc_cm"], row["hip_cm"]), axis=1).round(2)
+            df['ci'] = df.apply(lambda row: calculate_ci(row['weight_kg'], row['height_cm']), axis=1).round(2)
+            df['pi'] = df.apply(lambda row: calculate_pi(row['weight_kg'], row['height_cm']), axis=1).round(2)
+            df['conicity'] = df.apply(lambda row: calculate_conicity(row['wc_cm'], row['weight_kg'], row['height_cm']), axis=1).round(2)
+            df['lbm'] = df.apply(lambda row: calculate_lbm(row['weight_kg'], row['bfp']), axis=1).round(2)
+            df['bmi_prime'] = df.apply(lambda row: calculate_bmi_prime(row['bmi']), axis=1).round(2)
+            df['muscularity_index'] = df.apply(lambda row: calculate_muscularity_index(row['weight_kg'], row['height_cm']), axis=1).round(2)
+            df['metabolic_rate_ratio'] = df.apply(lambda row: calculate_metabolic_rate_ratio(row['bmr'], row['bsa']), axis=1).round(2)
+            df['bai'] = df.apply(lambda row: calculate_bai(row['estimated_hip_cm'], row['height_cm']), axis=1).round(2)
+            df['corpuscular_index'] = df.apply(lambda row: calculate_corpuscular_index(row['weight_kg'], row['height_cm'], row['age']), axis=1).round(2)
+            df['fm'] = df.apply(lambda row: calculate_fm(row['weight_kg'], row['lbm']), axis=1).round(2)
+            df['absi'] = df.apply(lambda row: calculate_absi(row['wc_cm'], row['bmi'], row['height_cm']), axis=1).round(2)
+            df['rfm'] = df.apply(lambda row: calculate_rfm(row['wc_cm'], row['height_cm'], row['sex']), axis=1).round(2)
+            df['afi'] = df.apply(lambda row: calculate_afi(row['wc_cm'], row['height_cm'], row['sex'], row['age']), axis=1).round(2)
+            df['afm'] = df.apply(lambda row: calculate_afm(row['weight_kg'], row['afi']), axis=1).round(2)
+            df['afbwr'] = df.apply(lambda row: calculate_afbwr(row['weight_kg'], row['afm']), axis=1).round(2)
 
-            # Add the 'bmi_category' column
+            # BMI Categories
             df['bmi_category'] = pd.cut(df['bmi'], bins=[0, 18.5, 25, 30, np.inf],
                                         labels=['underweight', 'normal', 'overweight', 'obese'])
 
